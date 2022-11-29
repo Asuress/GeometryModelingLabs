@@ -8,70 +8,7 @@
 #include "imgui_impl_sdl.h"
 #include "Lab1.h"
 
-void UpKeyReaction();
-void DownKeyReaction();
-void LeftKeyReaction();
-void RightKeyReaction();
-bool moveSnake();
-void HandleKeyDownEvent(const SDL_Event* e);
-void renderGameGUI();
-void renderPauseMenu();
-int main(int argc, char** argv);
-
-struct Matrix {
-private:
-
-public:
-    std::vector<Uint32> arr;
-    int rows;
-    int columns;
-
-    void Init(int rows, int columns) {
-        this->rows = rows;
-        this->columns = columns;
-        arr = std::vector<Uint32>(rows * columns);
-    }
-
-    Uint32& GetElement(int row, int col) {
-        row--; col--;
-        /*
-        1 2 3
-        4 5 6
-        7 8 9
-
-        [2,3] = 6 -- returns arr[1*3 + 2], aka 5th el., aka number 6 -- corr.
-        [3,2] = 8 -- returns arr[2*3 + 1], aka 7th el., aka number 8 -- corr.
-        */
-        return arr[row * columns + col];
-    }
-};
-
-struct Snake {
-    int x = 1;
-    int y = 1;
-    int prevX;
-    int prevY;
-    int dirX;
-    int dirY;
-};
-
-struct Item {
-    int x;
-    int y;
-
-    void GenerateNewPosition(Matrix matrix) {
-        x = (rand() % matrix.columns) + 1;
-        y = (rand() % matrix.rows) + 1;
-    }
-};
-
-int WindowWidth = 800;
-int WindowHeight = 600;
-int Score = 0;
-bool mIsPause = true;
-Snake mSnake;
-Matrix matrix;
-Item mItem;
+using namespace MySnake;
 
 int main(int argc, char** argv)
 {
@@ -234,89 +171,91 @@ int main(int argc, char** argv)
     return 0;
 }
 
-void HandleKeyDownEvent(const SDL_Event* e)
-{
-    switch (e->key.keysym.sym)
+namespace MySnake {
+    void HandleKeyDownEvent(const SDL_Event* e)
     {
-    case SDL_KeyCode::SDLK_UP:
-        UpKeyReaction();
-        break;
-    case SDL_KeyCode::SDLK_DOWN:
-        DownKeyReaction();
-        break;
-    case SDL_KeyCode::SDLK_LEFT:
-        LeftKeyReaction();
-        break;
-    case SDL_KeyCode::SDLK_RIGHT:
-        RightKeyReaction();
-        break;
-    case SDL_KeyCode::SDLK_ESCAPE:
-        mIsPause = !mIsPause;
-        break;
-    default:
-        break;
+        switch (e->key.keysym.sym)
+        {
+        case SDL_KeyCode::SDLK_UP:
+            UpKeyReaction();
+            break;
+        case SDL_KeyCode::SDLK_DOWN:
+            DownKeyReaction();
+            break;
+        case SDL_KeyCode::SDLK_LEFT:
+            LeftKeyReaction();
+            break;
+        case SDL_KeyCode::SDLK_RIGHT:
+            RightKeyReaction();
+            break;
+        case SDL_KeyCode::SDLK_ESCAPE:
+            mIsPause = !mIsPause;
+            break;
+        default:
+            break;
+        }
     }
-}
 
-void UpKeyReaction() {
-    mSnake.dirX = 0;
-    mSnake.dirY = -1;
-}
-void DownKeyReaction() {
-    mSnake.dirX = 0;
-    mSnake.dirY = 1;
-}
-void LeftKeyReaction() {
-    mSnake.dirX = -1;
-    mSnake.dirY = 0;
-}
-void RightKeyReaction() {
-    mSnake.dirX = 1;
-    mSnake.dirY = 0;
-}
-bool moveSnake() {
-    if (mSnake.x + mSnake.dirX > matrix.columns ||
-        mSnake.x + mSnake.dirX < 1)
-        return false;
-    if (mSnake.y + mSnake.dirY > matrix.rows ||
-        mSnake.y + mSnake.dirY < 1)
-        return false;
+    void UpKeyReaction() {
+        mSnake.dirX = 0;
+        mSnake.dirY = -1;
+    }
+    void DownKeyReaction() {
+        mSnake.dirX = 0;
+        mSnake.dirY = 1;
+    }
+    void LeftKeyReaction() {
+        mSnake.dirX = -1;
+        mSnake.dirY = 0;
+    }
+    void RightKeyReaction() {
+        mSnake.dirX = 1;
+        mSnake.dirY = 0;
+    }
+    bool moveSnake() {
+        if (mSnake.x + mSnake.dirX > matrix.columns ||
+            mSnake.x + mSnake.dirX < 1)
+            return false;
+        if (mSnake.y + mSnake.dirY > matrix.rows ||
+            mSnake.y + mSnake.dirY < 1)
+            return false;
 
-    mSnake.prevX = mSnake.x;
-    mSnake.prevY = mSnake.y;
-    mSnake.x += mSnake.dirX;
-    mSnake.y += mSnake.dirY;
-}
-void renderGameGUI() {
-    ImVec2 size;
-    ImVec2 pos;
-    size.x = WindowWidth;
-    size.y = WindowHeight / 6.0;
-    pos.x = 0;
-    pos.y = 0;
-    ImGui::SetNextWindowSize(size);
-    ImGui::SetNextWindowPos(pos);
+        mSnake.prevX = mSnake.x;
+        mSnake.prevY = mSnake.y;
+        mSnake.x += mSnake.dirX;
+        mSnake.y += mSnake.dirY;
+    }
+    void renderGameGUI() {
+        ImVec2 size;
+        ImVec2 pos;
+        size.x = WindowWidth;
+        size.y = WindowHeight / 6.0;
+        pos.x = 0;
+        pos.y = 0;
+        ImGui::SetNextWindowSize(size);
+        ImGui::SetNextWindowPos(pos);
 
-    ImGui::Begin("Score window", (bool*)0, ImGuiWindowFlags_::ImGuiWindowFlags_NoResize     |
-                                           ImGuiWindowFlags_::ImGuiWindowFlags_NoMove       |
-                                           ImGuiWindowFlags_::ImGuiWindowFlags_NoBackground |
-                                           ImGuiWindowFlags_::ImGuiWindowFlags_NoTitleBar);
-    
-    ImGui::Text("Your score: %i", Score);
-    ImGui::End();
-}
-void renderPauseMenu() {
-    ImVec2 size;
-    ImVec2 pos;
-    size.x = 2 * WindowWidth / 3.0;
-    size.y = 2 * WindowHeight / 3.0;
-    pos.x = WindowWidth / 2 - size.x / 2;
-    pos.y = WindowHeight / 2 - size.y / 2;
-    ImGui::SetNextWindowSize(size);
-    ImGui::SetNextWindowPos(pos);
+        ImGui::Begin("Score window", (bool*)0, ImGuiWindowFlags_::ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_::ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_::ImGuiWindowFlags_NoBackground |
+            ImGuiWindowFlags_::ImGuiWindowFlags_NoTitleBar);
 
-    ImGui::Begin("MENU", (bool*)0, ImGuiWindowFlags_::ImGuiWindowFlags_NoResize |
-                                   ImGuiWindowFlags_::ImGuiWindowFlags_NoMove);
-    ImGui::Text("MENU");
-    ImGui::End();
+        ImGui::Text("Your score: %i", Score);
+        ImGui::End();
+    }
+    void renderPauseMenu() {
+        ImVec2 size;
+        ImVec2 pos;
+        size.x = 2 * WindowWidth / 3.0;
+        size.y = 2 * WindowHeight / 3.0;
+        pos.x = WindowWidth / 2 - size.x / 2;
+        pos.y = WindowHeight / 2 - size.y / 2;
+        ImGui::SetNextWindowSize(size);
+        ImGui::SetNextWindowPos(pos);
+
+        ImGui::Begin("MENU", (bool*)0, ImGuiWindowFlags_::ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_::ImGuiWindowFlags_NoMove);
+        ImGui::Text("MENU");
+        ImGui::End();
+    }
 }
