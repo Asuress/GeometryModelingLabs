@@ -1,4 +1,5 @@
-﻿#include <iostream>
+﻿#pragma once
+#include <iostream>
 #include <vector>
 #include <string>
 
@@ -6,7 +7,8 @@
 #include "imgui.h"
 #include "imgui_impl_sdlrenderer.h"
 #include "imgui_impl_sdl.h"
-#include "Lab1.h"
+
+#include "MySnake.h"
 
 using namespace MySnake;
 
@@ -76,13 +78,13 @@ int main(int argc, char** argv)
             matrix.GetElement(i, j) = 0xaa000000;
         }
     }
-    mSnake.x = 1;
-    mSnake.y = 1;
-    mSnake.prevX = 1;
-    mSnake.prevY = 1;
-    mSnake.dirX = 1;
-    mSnake.dirY = 0;
-    mItem.GenerateNewPosition(matrix);
+    mSnake.tails[0].x = 1;
+    mSnake.tails[0].y = 1;
+    mSnake.tails[0].prevX = 1;
+    mSnake.tails[0].prevY = 1;
+    mSnake.tails[0].dirX = 1;
+    mSnake.tails[0].dirY = 0;
+    mItem.GenerateNewPosition(matrix, mSnake);
 
     SDL_UpdateTexture(texture, nullptr, bufferForUpdate.data(), textureWidth * sizeof(bufferForUpdate[0]));
 
@@ -108,15 +110,17 @@ int main(int argc, char** argv)
             }
         }
 
+        
+
         if (frameInSecond % 30 == 0 && !mIsPause) {
-            if (!moveSnake()) {
-                programWorks = false;
-            }
+            mIsGameLost = !moveSnake(addNewTail);
+            addNewTail = false;
         }
 
-        if (mSnake.x == mItem.x && mSnake.y == mItem.y) {
+        if (mSnake.tails[0].x == mItem.x && mSnake.tails[0].y == mItem.y) {
+            addNewTail = true;
             Score++;
-            mItem.GenerateNewPosition(matrix);
+            mItem.GenerateNewPosition(matrix, mSnake);
         }
 
         // UpdateImage
@@ -126,8 +130,9 @@ int main(int argc, char** argv)
             ImGui::NewFrame();
 
             if (!mIsPause) {
-                matrix.GetElement(mSnake.prevY, mSnake.prevX) = 0xaa000000;
-                matrix.GetElement(mSnake.y, mSnake.x) = 0x00aa0000;
+                //matrix.GetElement(mSnake.tails[0].prevY, mSnake.tails[0].prevX) = 0xaa000000;
+                matrix.GetElement(mSnake.tails[mSnake.tails.size() - 1].prevY, mSnake.tails[mSnake.tails.size() - 1].prevX) = 0xaa000000;
+                matrix.GetElement(mSnake.tails[0].y, mSnake.tails[0].x) = 0x00aa0000;
                 matrix.GetElement(mItem.y, mItem.x) = 0xf423ff00;
             }
 
@@ -136,7 +141,10 @@ int main(int argc, char** argv)
             
             // Render Gui
             {
-                if (!mIsPause) {
+                if (mIsGameLost) {
+                    renderGameLostGUI();
+                } 
+                else if (!mIsPause) {
                     renderGameGUI();
                 }
                 else {
@@ -197,33 +205,74 @@ namespace MySnake {
     }
 
     void UpKeyReaction() {
-        mSnake.dirX = 0;
-        mSnake.dirY = -1;
+        mSnake.tails[0].dirX = 0;
+        mSnake.tails[0].dirY = -1;
     }
     void DownKeyReaction() {
-        mSnake.dirX = 0;
-        mSnake.dirY = 1;
+        mSnake.tails[0].dirX = 0;
+        mSnake.tails[0].dirY = 1;
     }
     void LeftKeyReaction() {
-        mSnake.dirX = -1;
-        mSnake.dirY = 0;
+        mSnake.tails[0].dirX = -1;
+        mSnake.tails[0].dirY = 0;
     }
     void RightKeyReaction() {
-        mSnake.dirX = 1;
-        mSnake.dirY = 0;
+        mSnake.tails[0].dirX = 1;
+        mSnake.tails[0].dirY = 0;
     }
-    bool moveSnake() {
-        if (mSnake.x + mSnake.dirX > matrix.columns ||
-            mSnake.x + mSnake.dirX < 1)
+    bool moveSnake(bool addNewElem) {
+        if (checkCollision()) {
             return false;
-        if (mSnake.y + mSnake.dirY > matrix.rows ||
-            mSnake.y + mSnake.dirY < 1)
-            return false;
-
-        mSnake.prevX = mSnake.x;
-        mSnake.prevY = mSnake.y;
-        mSnake.x += mSnake.dirX;
-        mSnake.y += mSnake.dirY;
+        }
+        
+        if (addNewElem) {
+            SnakeTail tail;
+            tail.x = mSnake.tails[mSnake.tails.size() - 1].x;
+            tail.y = mSnake.tails[mSnake.tails.size() - 1].y;
+            tail.prevX = mSnake.tails[mSnake.tails.size() - 1].prevX;
+            tail.prevY = mSnake.tails[mSnake.tails.size() - 1].prevY;
+            mSnake.tails.push_back(tail);
+            for (int i = 0; i < mSnake.tails.size(); i++) {
+                if (i != mSnake.tails.size() - 1) {
+                    mSnake.tails[i].prevX = mSnake.tails[i].x;
+                    mSnake.tails[i].prevY = mSnake.tails[i].y;
+                    if (i > 0) {
+                        mSnake.tails[i].x = mSnake.tails[i - 1].prevX;
+                        mSnake.tails[i].y = mSnake.tails[i - 1].prevY;
+                    }
+                }
+            }
+        }
+        else {
+            for (int i = 0; i < mSnake.tails.size(); i++) {
+                mSnake.tails[i].prevX = mSnake.tails[i].x;
+                mSnake.tails[i].prevY = mSnake.tails[i].y;
+                if (i > 0) {
+                    mSnake.tails[i].x = mSnake.tails[i - 1].prevX;
+                    mSnake.tails[i].y = mSnake.tails[i - 1].prevY;
+                }
+                else {
+                    mSnake.tails[i].x += mSnake.tails[0].dirX;
+                    mSnake.tails[i].y += mSnake.tails[0].dirY;
+                }
+            }
+        }
+    }
+    bool checkCollision() {
+        // check if out of playfield
+        if (mSnake.tails[0].x + mSnake.tails[0].dirX > matrix.columns ||
+            mSnake.tails[0].x + mSnake.tails[0].dirX < 1)
+            return true;
+        if (mSnake.tails[0].y + mSnake.tails[0].dirY > matrix.rows ||
+            mSnake.tails[0].y + mSnake.tails[0].dirY < 1)
+            return true;
+        // check if collide with itself
+        for (int i = 0; i < mSnake.tails.size(); i++) {
+            if (mSnake.tails[0].x + mSnake.tails[0].dirX == mSnake.tails[i].x &&
+                mSnake.tails[0].y + mSnake.tails[0].dirY == mSnake.tails[i].y)
+                return true;
+        }
+        return false;
     }
     void renderGameGUI() {
         ImVec2 size;
@@ -239,8 +288,9 @@ namespace MySnake {
             ImGuiWindowFlags_::ImGuiWindowFlags_NoMove |
             ImGuiWindowFlags_::ImGuiWindowFlags_NoBackground |
             ImGuiWindowFlags_::ImGuiWindowFlags_NoTitleBar);
-
         ImGui::Text("Your score: %i", Score);
+        ImGui::Text("x pos: %i", mSnake.tails[0].x);
+        ImGui::Text("y pos: %i", mSnake.tails[0].y);
         ImGui::End();
     }
     void renderPauseMenu() {
@@ -256,6 +306,23 @@ namespace MySnake {
         ImGui::Begin("MENU", (bool*)0, ImGuiWindowFlags_::ImGuiWindowFlags_NoResize |
             ImGuiWindowFlags_::ImGuiWindowFlags_NoMove);
         ImGui::Text("MENU");
+        ImGui::Text("tails %i", mSnake.tails.size());
+        ImGui::End();
+    }
+    void renderGameLostGUI() {
+        ImVec2 size;
+        ImVec2 pos;
+        size.x = 2 * WindowWidth / 3.0;
+        size.y = 2 * WindowHeight / 3.0;
+        pos.x = WindowWidth / 2 - size.x / 2;
+        pos.y = WindowHeight / 2 - size.y / 2;
+        ImGui::SetNextWindowSize(size);
+        ImGui::SetNextWindowPos(pos);
+
+        ImGui::Begin("GAME LOST", (bool*)0, ImGuiWindowFlags_::ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_::ImGuiWindowFlags_NoMove);
+        ImGui::TextColored(ImVec4(2, 2, 2, 2), "GAME LOST");
+        ImGui::Text("GAME LOST");
         ImGui::End();
     }
 }

@@ -42,6 +42,9 @@
     <ClCompile Include="..\ThirdParty\imgui-1.88\backends\imgui_impl_sdlrenderer.cpp">
       <Filter>Исходные файлы\ImGui</Filter>
     </ClCompile>
+    <ClCompile Include="MySnake.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\ThirdParty\imgui-1.88\imgui.h">
@@ -65,7 +68,7 @@
     <ClInclude Include="..\ThirdParty\imgui-1.88\backends\imgui_impl_sdlrenderer.h">
       <Filter>Исходные файлы\ImGui</Filter>
     </ClInclude>
-    <ClInclude Include="Lab1.h">
+    <ClInclude Include="MySnake.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>
